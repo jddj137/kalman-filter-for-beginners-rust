@@ -6,7 +6,7 @@ pub mod utils;
 
 use plotters::prelude::*;
 use recursive_filters::AverageFilter;
-use utils::generate_float_range;
+use utils::ascending_float_range;
 
 fn test_average_filter() {
     // Setup simulation & data logging
@@ -33,30 +33,31 @@ fn test_average_filter() {
     let root = BitMapBackend::new("./plots/AverageFilter.png", (640, 480)).into_drawing_area();
     let _ = root.fill(&WHITE);
 
-    // After this point, we should be able to construct a chart context
+    // Configure the chart
     let mut chart = ChartBuilder::on(&root)
-        // Set the caption of the chart
-        .caption("Average Filter", ("sans-serif", 35).into_font())
+        .caption("Average Filter", ("sans-serif", 30).into_font())
         .margin(25)
-        // Set the size of the label region
-        .x_label_area_size(20)
-        .y_label_area_size(40)
-        // Finally attach a coordinate on the drawing area and make a chart context
-        .build_cartesian_2d(0f64..10f64, 0f64..20f64)
+        .x_label_area_size(50)
+        .y_label_area_size(50)
+        .build_cartesian_2d(0f64..10f64, 4f64..24f64)
         .expect("ChartBuilder failed");
 
-    // Then we can draw a mesh
+    // Configure mesh with axis labels and grid lines
     chart
         .configure_mesh()
         // We can customize the maximum number of labels allowed for each axis
-        .x_labels(5)
-        .y_labels(5)
-        // We can also change the format of the label text
-        .y_label_formatter(&|x| format!("{:.2}", x))
+        .x_labels(10)
+        .y_labels(11)
+        .x_desc("Time [s]") // Label for the x-axis
+        .y_desc("Voltage [V]") // Label for the y-axis
+        .x_label_style(("sans-serif", 18).into_font())
+        .y_label_style(("sans-serif", 18).into_font())
+        .x_label_formatter(&|x| format!("{}", *x as i64))
+        .y_label_formatter(&|y| format!("{}", *y as i64))
         .draw()
         .expect("configure_mesh() failed");
 
-    // Plot the raw data as a line
+    // Plot raw data with a red line
     chart
         .draw_series(LineSeries::new(
             times_s
@@ -69,7 +70,7 @@ fn test_average_filter() {
         .label("Raw Data")
         .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
 
-    // Plot the filtered data as a line
+    // Plot filtered data with a blue line
     chart
         .draw_series(LineSeries::new(
             times_s
@@ -80,10 +81,11 @@ fn test_average_filter() {
         ))
         .expect("draw_series() filtered data failed")
         .label("Filtered Data")
-        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
 
     chart
         .configure_series_labels()
+        .position(SeriesLabelPosition::LowerRight)
         .background_style(&WHITE.mix(0.8))
         .border_style(&BLACK)
         .draw()
