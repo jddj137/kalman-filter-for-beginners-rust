@@ -121,6 +121,29 @@ fn test_average_filter() {
     println!("Average filter plot written: ./plots/AverageFilter.png");
 }
 
+fn test_moving_average_filter() {
+    let file = std::fs::File::open("./data/SonarAlt_Ex02.mat")
+        .expect("Failed to open: ./data/SonarAlt_Ex02.mat");
+    let mat_file = matfile::MatFile::parse(file)
+        .expect("Failed to parse: ./data/SonarAlt_Ex02.mat");
+
+    // Initialize moving averaging filter with window size of 10
+    let mut mv_avg_filt = AverageFilter::new(10);
+
+    if let Some(sonar_alt_arr) = mat_file.find_by_name("sonarAlt") {
+        if let matfile::NumericData::Double {real, ..} = sonar_alt_arr.data() {
+            for  raw_data in real {
+                mv_avg_filt.update(raw_data);
+          }
+        }
+    }
+}
+
+
+
+
 fn main() {
-    test_average_filter();
+    // test_average_filter();
+    test_moving_average_filter();
+
 }
