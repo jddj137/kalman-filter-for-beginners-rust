@@ -29,7 +29,7 @@ fn test_average_filter() {
         filtered_data_V.push(avg_filt.get_average());
     }
 
-    // plotters graphing configuration
+    // Build and save graph using plotters crate
     let root = BitMapBackend::new("./plots/AverageFilter.png", (640, 480)).into_drawing_area();
     let _ = root.fill(&WHITE);
 
@@ -45,9 +45,8 @@ fn test_average_filter() {
     // Configure mesh with axis labels and grid lines
     chart
         .configure_mesh()
-        // We can customize the maximum number of labels allowed for each axis
-        .x_labels(10)
-        .y_labels(11)
+        .x_labels(10) // increments of 1
+        .y_labels(11) // increments of 2
         .x_desc("Time [s]") // Label for the x-axis
         .y_desc("Voltage [V]") // Label for the y-axis
         .x_label_style(("sans-serif", 18).into_font())
@@ -57,7 +56,7 @@ fn test_average_filter() {
         .draw()
         .expect("configure_mesh() failed");
 
-    // Plot raw data with a red line
+    // Plot the raw data as a red line, then add points
     chart
         .draw_series(LineSeries::new(
             times_s
@@ -66,11 +65,22 @@ fn test_average_filter() {
                 .map(|(&x_val, &y_val)| (x_val, y_val)),
             &RED,
         ))
-        .expect("draw_series() raw data failed")
-        .label("Raw Data")
-        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+        .expect("draw_series() LineSeries raw data failed");
 
-    // Plot filtered data with a blue line
+    chart
+        .draw_series(PointSeries::of_element(
+            times_s.iter().zip(raw_data_V.iter()).map(|(&x, &y)| (x, y)),
+            4, // Size of the points
+            &RED,
+            &|coord, size, style| {
+                return EmptyElement::at(coord) + Cross::new((0, 0), size, style.filled());
+            },
+        ))
+        .expect("draw_series() PointSeries raw data failed")
+        .label("Raw Data")
+        .legend(|(x, y)| EmptyElement::at((x + 10, y)) + Cross::new((0, 0), 3, RED.filled()));
+
+    // Plot the filtered data as a blue line, then add points
     chart
         .draw_series(LineSeries::new(
             times_s
@@ -79,13 +89,28 @@ fn test_average_filter() {
                 .map(|(&x_val, &y_val)| (x_val, y_val)),
             &BLUE,
         ))
-        .expect("draw_series() filtered data failed")
+        .expect("draw_series() LineSeries filtered data failed");
+
+    chart
+        .draw_series(PointSeries::of_element(
+            times_s
+                .iter()
+                .zip(filtered_data_V.iter())
+                .map(|(&x, &y)| (x, y)),
+            3, // Size of the points
+            &BLUE,
+            &|coord, size, style| {
+                return EmptyElement::at(coord) + Circle::new((0, 0), size, style.filled());
+            },
+        ))
+        .expect("draw_series() PointSeries raw data failed")
         .label("Filtered Data")
-        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+        .legend(|(x, y)| EmptyElement::at((x + 10, y)) + Circle::new((0, 0), 3, BLUE.filled()));
 
     chart
         .configure_series_labels()
         .position(SeriesLabelPosition::LowerRight)
+        .margin(5)
         .background_style(&WHITE.mix(0.8))
         .border_style(&BLACK)
         .draw()
@@ -93,7 +118,7 @@ fn test_average_filter() {
 
     let _ = root.present();
 
-    println!("Average Filter test plot written: ./plots/AverageFilter.png");
+    println!("Average filter plot written: ./plots/AverageFilter.png");
 }
 
 fn main() {
