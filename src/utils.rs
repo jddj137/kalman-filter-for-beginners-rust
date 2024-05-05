@@ -12,10 +12,14 @@ pub fn ascending_float_range(start: f64, end: f64, step: f64) -> Vec<f64> {
 pub fn print_names_of_mat_file_arrays() {
     let file = std::fs::File::open("./data/SonarAlt_Ex02.mat")
         .expect("Failed to open: ./data/SonarAlt_Ex02.mat");
-    let mat_file = matfile::MatFile::parse(file)
-        .expect("Failed to parse: ./data/SonarAlt_Ex02.mat");
+    let mat_file =
+        matfile::MatFile::parse(file).expect("Failed to parse: ./data/SonarAlt_Ex02.mat");
 
     for array in mat_file.arrays() {
-        println!("Found array named {} of size {:?}", array.name(), array.size());
+        println!(
+            "Found array named {} of size {:?}",
+            array.name(),
+            array.size()
+        );
     }
 }

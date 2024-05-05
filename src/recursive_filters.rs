@@ -32,7 +32,10 @@ pub struct MovingAverageFilter {
 
 impl MovingAverageFilter {
     pub fn new(window_size: usize) -> Self {
-        assert!(window_size > 0, "Window size must be greater than zero.");
+        assert!(
+            window_size > 0,
+            "MovingAverageFilter: Window size must be greater than zero."
+        );
 
         Self {
             avg: 0.0,
@@ -48,7 +51,7 @@ impl MovingAverageFilter {
             let oldest_data = data_buff[self.oldest_data_idx];
             self.avg = self.avg + (data - oldest_data) / self.window_size as f64;
 
-            // Book keeping to remove oldest and add newest data points to buffer
+            // Book keeping to remove oldest and add newest data point to buffer
             data_buff[self.oldest_data_idx] = data;
             self.oldest_data_idx = (self.oldest_data_idx + 1) % self.window_size;
         } else {
