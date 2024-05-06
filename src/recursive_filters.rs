@@ -77,7 +77,8 @@ impl LowPassFilter1stOrder {
     pub fn new(alpha: f64) -> Self {
         assert!(
             (alpha > 0.0) && (alpha < 1.0),
-            "LowPassFilter1stOrder: Alpha must be between zero and one, 0.0 < alpha < 1.0"
+            "LowPassFilter1stOrder: Smoothing factor, alpha,
+             must be between zero and one, 0.0 < alpha < 1.0"
         );
 
         Self {
@@ -99,4 +100,24 @@ impl LowPassFilter1stOrder {
     pub fn get_average(&self) -> f64 {
         self.avg
     }
+}
+
+/**
+ * The generic form of the equation used in the averaging filter and 1st order low pass filter.
+ *
+ * Alpha is called the smoothing factor.
+ * A larger alpha gives more weight to recent data, resulting in a faster response to changes;
+ * leads to less smoothing and more sensitivity to recent values.
+ * A smaller alpha gives more weight to past data, resulting in a slower response to changes,
+ * but leading to smoother outputs and more memory of past values.
+ * .
+ */
+fn exponential_smoothing(data: f64, previous_average: f64, alpha: f64) -> f64 {
+    assert!(
+        (alpha > 0.0) && (alpha < 1.0),
+        "exponential_smoothing: Smoothing factor, alpha,
+         must be between zero and one, 0.0 < alpha < 1.0"
+    );
+
+    alpha * previous_average + (1.0 - alpha) * data
 }
