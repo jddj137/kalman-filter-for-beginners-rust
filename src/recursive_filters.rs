@@ -66,3 +66,37 @@ impl MovingAverageFilter {
         self.avg
     }
 }
+
+pub struct LowPassFilter1stOrder {
+    avg: f64,
+    alpha: f64,
+    initialized: bool,
+}
+
+impl LowPassFilter1stOrder {
+    pub fn new(alpha: f64) -> Self {
+        assert!(
+            (alpha > 0.0) && (alpha < 1.0),
+            "LowPassFilter1stOrder: Alpha must be between zero and one, 0.0 < alpha < 1.0"
+        );
+
+        Self {
+            avg: 0.0,
+            alpha,
+            initialized: false,
+        }
+    }
+
+    pub fn update(&mut self, data: f64) {
+        if !(self.initialized) {
+            self.avg = data;
+            self.initialized = true;
+        }
+
+        self.avg = self.alpha * self.avg + (1.0 - self.alpha) * data;
+    }
+
+    pub fn get_average(&self) -> f64 {
+        self.avg
+    }
+}

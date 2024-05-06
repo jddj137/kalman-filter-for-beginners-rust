@@ -3,7 +3,7 @@ pub mod sensor_spoofs;
 pub mod utils;
 
 use plotters::prelude::*;
-use recursive_filters::{AverageFilter, MovingAverageFilter};
+use recursive_filters::{AverageFilter, LowPassFilter1stOrder, MovingAverageFilter};
 use utils::ascending_float_range;
 
 fn test_average_filter() {
@@ -30,7 +30,7 @@ fn test_average_filter() {
 
     // --- MAKE PLOTS --------------------------------------------------------//
     // Build and save graph using plotters crate; graph format based on textbook example
-    let root = BitMapBackend::new("./plots/AverageFilter.png", (640, 480)).into_drawing_area();
+    let root = BitMapBackend::new("./plots/01_AverageFilter.png", (640, 480)).into_drawing_area();
     let _ = root.fill(&WHITE);
 
     // Configure the chart
@@ -118,15 +118,15 @@ fn test_average_filter() {
 
     let _ = root.present();
 
-    println!("Average filter plot written: ./plots/AverageFilter.png");
+    println!("Average filter plot written: ./plots/01_AverageFilter.png");
 }
 
 fn test_moving_average_filter() {
     // Load sonar altitude simulation data
-    let file = std::fs::File::open("./data/SonarAlt_Ex02.mat")
-        .expect("Failed to open: ./data/SonarAlt_Ex02.mat");
+    let file = std::fs::File::open("./data/SonarAlt_Ex02_Ex03.mat")
+        .expect("Failed to open: ./data/SonarAlt_Ex02_Ex03.mat");
     let mat_file =
-        matfile::MatFile::parse(file).expect("Failed to parse: ./data/SonarAlt_Ex02.mat");
+        matfile::MatFile::parse(file).expect("Failed to parse: ./data/SonarAlt_Ex02_Ex03.mat");
 
     if let Some(sonar_alt_arr) = mat_file.find_by_name("sonarAlt") {
         // Setup simulation & data logging; inputs based on textbook example
@@ -155,8 +155,8 @@ fn test_moving_average_filter() {
 
         // --- MAKE PLOTS ----------------------------------------------------//
         // Build and save graph using plotters crate; graph format based on textbook example
-        let root =
-            BitMapBackend::new("./plots/MovingAverageFilter.png", (640, 480)).into_drawing_area();
+        let root = BitMapBackend::new("./plots/02_MovingAverageFilter.png", (640, 480))
+            .into_drawing_area();
         let _ = root.fill(&WHITE);
 
         // Configure the chart
@@ -221,11 +221,190 @@ fn test_moving_average_filter() {
 
         let _ = root.present();
 
-        println!("Moving average filter plot written: ./plots/MovingAverageFilter.png");
+        println!("Moving average filter plot written: ./plots/02_MovingAverageFilter.png");
+    }
+}
+
+fn test_1st_order_low_pass_filter() {
+    // Load sonar altitude simulation data
+    let file = std::fs::File::open("./data/SonarAlt_Ex02_Ex03.mat")
+        .expect("Failed to open: ./data/SonarAlt_Ex02_Ex03.mat");
+    let mat_file =
+        matfile::MatFile::parse(file).expect("Failed to parse: ./data/SonarAlt_Ex02_Ex03.mat");
+
+    if let Some(sonar_alt_arr) = mat_file.find_by_name("sonarAlt") {
+        // Setup simulation & data logging; inputs based on textbook example
+        let num_data_pts: usize = 500; // from example code
+
+        let dt: f64 = 0.02; // from example code
+        let times_s: Vec<f64> = ascending_float_range(0.0, dt * num_data_pts as f64, dt);
+
+        let mut raw_data = Vec::<f64>::with_capacity(num_data_pts);
+        let mut filtered_data_40 = Vec::<f64>::with_capacity(num_data_pts);
+        let mut filtered_data_90 = Vec::<f64>::with_capacity(num_data_pts);
+
+        // Initialize moving averaging filter, alpha = 0.4 and alpha = 0.9
+        let mut mv_avg_filt_40 = LowPassFilter1stOrder::new(0.4);
+        let mut mv_avg_filt_90 = LowPassFilter1stOrder::new(0.9);
+
+        // Run simulation
+        if let matfile::NumericData::Double { real, .. } = sonar_alt_arr.data() {
+            for i in 0..num_data_pts {
+                let data_pt = real[i];
+                mv_avg_filt_40.update(data_pt);
+                mv_avg_filt_90.update(data_pt);
+
+                // Log data for plotting
+                raw_data.push(data_pt);
+                filtered_data_40.push(mv_avg_filt_40.get_average());
+                filtered_data_90.push(mv_avg_filt_90.get_average());
+            }
+        }
+
+        // --- MAKE PLOTS ----------------------------------------------------//
+        // Build and save graph using plotters crate; graph format based on textbook example
+        let root = BitMapBackend::new("./plots/03a_LowPassFilter1stOrder.png", (640, 480))
+            .into_drawing_area();
+        let _ = root.fill(&WHITE);
+
+        // Configure the chart
+        let mut chart = ChartBuilder::on(&root)
+            .caption("1st Order Low Pass Filter", ("sans-serif", 30).into_font())
+            .margin(25)
+            .x_label_area_size(50)
+            .y_label_area_size(50)
+            .build_cartesian_2d(0f64..10f64, 30f64..120f64)
+            .expect("ChartBuilder failed");
+
+        // Configure mesh with axis labels and grid lines
+        chart
+            .configure_mesh()
+            .x_labels(10) // increments of 1
+            .y_labels(10) // increments of 10
+            .x_desc("Time [s]") // Label for the x-axis
+            .y_desc("Altitude [m]") // Label for the y-axis
+            .x_label_style(("sans-serif", 18).into_font())
+            .y_label_style(("sans-serif", 18).into_font())
+            .x_label_formatter(&|x| format!("{}", *x as i64))
+            .y_label_formatter(&|y| format!("{}", *y as i64))
+            .draw()
+            .expect("configure_mesh() failed");
+
+        // Plot the raw data as red points
+        chart
+            .draw_series(PointSeries::of_element(
+                times_s.iter().zip(raw_data.iter()).map(|(&x, &y)| (x, y)),
+                2, // Size of the points
+                &RED,
+                &|coord, size, style| {
+                    return EmptyElement::at(coord)
+                        + Cross::new((0, 0), size, style.color.mix(0.8));
+                },
+            ))
+            .expect("draw_series() PointSeries raw data failed")
+            .label("Measured")
+            .legend(|(x, y)| EmptyElement::at((x + 10, y)) + Cross::new((0, 0), 3, RED.filled()));
+
+        // Plot the filtered data as a blue line
+        chart
+            .draw_series(LineSeries::new(
+                times_s
+                    .iter()
+                    .zip(filtered_data_40.iter())
+                    .map(|(&x_val, &y_val)| (x_val, y_val)),
+                &BLUE,
+            ))
+            .expect("draw_series() LineSeries filtered data failed")
+            .label("LPF")
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+
+        chart
+            .configure_series_labels()
+            .position(SeriesLabelPosition::LowerRight)
+            .margin(5)
+            .background_style(&WHITE.mix(0.8))
+            .border_style(&BLACK)
+            .draw()
+            .expect("configure_series_labels() failed");
+
+        let _ = root.present();
+
+        println!("Low pass filter plot written: ./plots/03a_LowPassFilter1stOrder.png");
+
+        // --- MAKE PLOTS --------------------------------------------------------//
+        // Build and save graph using plotters crate; graph format based on textbook example
+        let root = BitMapBackend::new("./plots/03b_LowPassFilter1stOrder.png", (640, 480))
+            .into_drawing_area();
+        let _ = root.fill(&WHITE);
+
+        // Configure the chart
+        let mut chart = ChartBuilder::on(&root)
+            .caption("1st Order Low Pass Filter", ("sans-serif", 30).into_font())
+            .margin(25)
+            .x_label_area_size(50)
+            .y_label_area_size(50)
+            .build_cartesian_2d(0f64..10f64, 30f64..120f64)
+            .expect("ChartBuilder failed");
+
+        // Configure mesh with axis labels and grid lines
+        chart
+            .configure_mesh()
+            .x_labels(10) // increments of 1
+            .y_labels(10) // increments of 10
+            .x_desc("Time [s]") // Label for the x-axis
+            .y_desc("Altitude [m]") // Label for the y-axis
+            .x_label_style(("sans-serif", 18).into_font())
+            .y_label_style(("sans-serif", 18).into_font())
+            .x_label_formatter(&|x| format!("{}", *x as i64))
+            .y_label_formatter(&|y| format!("{}", *y as i64))
+            .draw()
+            .expect("configure_mesh() failed");
+
+        // Plot the alpha = 0.4 data as a red line
+        chart
+            .draw_series(LineSeries::new(
+                times_s
+                    .iter()
+                    .zip(filtered_data_40.iter())
+                    .map(|(&x_val, &y_val)| (x_val, y_val)),
+                &RED,
+            ))
+            .expect("draw_series() LineSeries alpha = 0.4 failed")
+            .label("alpha = 0.4")
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+
+        // Plot the alpha = 0.9 data as a blue line
+        chart
+            .draw_series(LineSeries::new(
+                times_s
+                    .iter()
+                    .zip(filtered_data_90.iter())
+                    .map(|(&x_val, &y_val)| (x_val, y_val)),
+                &BLUE,
+            ))
+            .expect("draw_series() LineSeries alpha = 0.9 failed")
+            .label("alpha = 0.9")
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+
+        chart
+            .configure_series_labels()
+            .position(SeriesLabelPosition::LowerRight)
+            .margin(5)
+            .background_style(&WHITE.mix(0.8))
+            .border_style(&BLACK)
+            .draw()
+            .expect("configure_series_labels() failed");
+
+        let _ = root.present();
+
+        println!(
+            "Low pass filter alpha comparision plot written: ./plots/03b_LowPassFilter1stOrder.png"
+        );
     }
 }
 
 fn main() {
     test_average_filter();
     test_moving_average_filter();
+    test_1st_order_low_pass_filter();
 }
