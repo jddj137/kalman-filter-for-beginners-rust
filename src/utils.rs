@@ -23,3 +23,12 @@ pub fn print_names_of_mat_file_arrays() {
         );
     }
 }
+
+pub struct PlotLabels {
+    pub plot_pathname: String,
+    pub title: String,
+    pub x_axis_label: String,
+    pub y_axis_label: String,
+    pub x_axis_data1_label: String,
+    pub x_axis_data2_label: String,
+}
