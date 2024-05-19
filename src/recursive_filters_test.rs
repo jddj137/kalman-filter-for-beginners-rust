@@ -29,9 +29,9 @@ pub fn average_filter_example() {
 
     // --- MAKE PLOTS --------------------------------------------------------//
     // Build and save graph using plotters crate; graph format based on textbook example
-    let x_axis_data = times_s;
-    let y_axis_data1 = raw_data;
-    let y_axis_data2 = filtered_data;
+    let x_axis_data = &times_s;
+    let y_axis_data1 = &raw_data;
+    let y_axis_data2 = &filtered_data;
 
     let plot_labels = PlotLabels {
         plot_pathname: "./plots/01_AverageFilter.png".to_string(),
@@ -303,7 +303,7 @@ pub fn first_order_low_pass_filter_example() {
         // --- MAKE PLOTS ----------------------------------------------------//
         // Build and save graph using plotters crate; graph format based on textbook example
         let x_axis_data = &times_s;
-        let y_axis_data1 = raw_data;
+        let y_axis_data1 = &raw_data;
         let y_axis_data2 = &filtered_data_40;
 
         let plot_labels = PlotLabels {
