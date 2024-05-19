@@ -29,6 +29,6 @@ pub struct PlotLabels {
     pub title: String,
     pub x_axis_label: String,
     pub y_axis_label: String,
-    pub x_axis_data1_label: String,
-    pub x_axis_data2_label: String,
+    pub y_axis_data1_label: String,
+    pub y_axis_data2_label: String,
 }
