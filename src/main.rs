@@ -4,6 +4,7 @@ pub mod sensor_spoofs;
 pub mod utils;
 
 use crate::kalman_filter_test::{
+    kalman_filter_estimate_position_from_velocity_example,
     kalman_filter_estimate_velocity_from_position_example, kalman_filter_extremely_simple_example,
 };
 use crate::recursive_filters_test::{
@@ -18,5 +19,7 @@ fn main() {
 
     // Kalman Filter
     kalman_filter_extremely_simple_example();
+
     kalman_filter_estimate_velocity_from_position_example();
+    kalman_filter_estimate_position_from_velocity_example();
 }
