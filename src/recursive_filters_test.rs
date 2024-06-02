@@ -162,10 +162,9 @@ pub fn average_filter_example() {
 
 pub fn moving_average_filter_example() {
     // Load sonar altitude simulation data
-    let file = std::fs::File::open("./data/SonarAlt_Ex02_Ex03.mat")
-        .expect("Failed to open: ./data/SonarAlt_Ex02_Ex03.mat");
-    let mat_file =
-        matfile::MatFile::parse(file).expect("Failed to parse: ./data/SonarAlt_Ex02_Ex03.mat");
+    let file =
+        std::fs::File::open("./data/SonarAlt.mat").expect("Failed to open: ./data/SonarAlt.mat");
+    let mat_file = matfile::MatFile::parse(file).expect("Failed to parse: ./data/SonarAlt.mat");
 
     if let Some(sonar_alt_arr) = mat_file.find_by_name("sonarAlt") {
         // Setup simulation & data logging; inputs based on textbook example
@@ -194,13 +193,25 @@ pub fn moving_average_filter_example() {
 
         // --- MAKE PLOTS ----------------------------------------------------//
         // Build and save graph using plotters crate; graph format based on textbook example
-        let root = BitMapBackend::new("./plots/02_MovingAverageFilter.png", (640, 480))
-            .into_drawing_area();
+        let x_axis_data = &times_s;
+        let y_axis_data1 = &raw_data;
+        let y_axis_data2 = &filtered_data;
+
+        let plot_labels = PlotLabels {
+            plot_pathname: "./plots/02_MovingAverageFilter.png".to_string(),
+            title: "Moving Average Filter".to_string(),
+            x_axis_label: "Time [s]".to_string(),
+            y_axis_label: "Altitude [m]".to_string(),
+            y_axis_data1_label: "Measured".to_string(),
+            y_axis_data2_label: "Moving average".to_string(),
+        };
+
+        let root = BitMapBackend::new(&plot_labels.plot_pathname, (640, 480)).into_drawing_area();
         let _ = root.fill(&WHITE);
 
         // Configure the chart
         let mut chart = ChartBuilder::on(&root)
-            .caption("Moving Average Filter", ("sans-serif", 30).into_font())
+            .caption(plot_labels.title, ("sans-serif", 30).into_font())
             .margin(25)
             .x_label_area_size(50)
             .y_label_area_size(50)
@@ -212,8 +223,8 @@ pub fn moving_average_filter_example() {
             .configure_mesh()
             .x_labels(20) // increments of 1
             .y_labels(10) // increments of 10
-            .x_desc("Time [s]") // Label for the x-axis
-            .y_desc("Altitude [m]") // Label for the y-axis
+            .x_desc(plot_labels.x_axis_label) // Label for the x-axis
+            .y_desc(plot_labels.y_axis_label) // Label for the y-axis
             .x_label_style(("sans-serif", 18).into_font())
             .y_label_style(("sans-serif", 18).into_font())
             .x_label_formatter(&|x| format!("{}", *x as i64))
@@ -224,29 +235,43 @@ pub fn moving_average_filter_example() {
         // Plot the raw data as red points
         chart
             .draw_series(PointSeries::of_element(
-                times_s.iter().zip(raw_data.iter()).map(|(&x, &y)| (x, y)),
+                x_axis_data
+                    .iter()
+                    .zip(y_axis_data1.iter())
+                    .map(|(&x, &y)| (x, y)),
                 2, // Size of the points
                 &RED,
                 &|coord, size, style| {
-                    return EmptyElement::at(coord)
-                        + Cross::new((0, 0), size, style.color.mix(0.8));
+                    return EmptyElement::at(coord) + Cross::new((0, 0), size, style.filled());
                 },
             ))
-            .expect("draw_series() PointSeries raw data failed")
-            .label("Measured")
+            .expect(
+                format!(
+                    "draw_series() PointSeries {} failed",
+                    plot_labels.y_axis_data1_label
+                )
+                .as_str(),
+            )
+            .label(plot_labels.y_axis_data1_label)
             .legend(|(x, y)| EmptyElement::at((x + 10, y)) + Cross::new((0, 0), 3, RED.filled()));
 
         // Plot the filtered data as a blue line
         chart
             .draw_series(LineSeries::new(
-                times_s
+                x_axis_data
                     .iter()
-                    .zip(filtered_data.iter())
+                    .zip(y_axis_data2.iter())
                     .map(|(&x_val, &y_val)| (x_val, y_val)),
                 &BLUE,
             ))
-            .expect("draw_series() LineSeries filtered data failed")
-            .label("Moving Average")
+            .expect(
+                format!(
+                    "draw_series() LineSeries {} failed",
+                    plot_labels.y_axis_data2_label
+                )
+                .as_str(),
+            )
+            .label(plot_labels.y_axis_data2_label)
             .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
 
         chart
@@ -260,16 +285,18 @@ pub fn moving_average_filter_example() {
 
         let _ = root.present();
 
-        println!("Moving average filter plot written: ./plots/02_MovingAverageFilter.png");
+        println!(
+            "Low pass filter plot written: {}",
+            plot_labels.plot_pathname
+        );
     }
 }
 
 pub fn first_order_low_pass_filter_example() {
     // Load sonar altitude simulation data
-    let file = std::fs::File::open("./data/SonarAlt_Ex02_Ex03.mat")
-        .expect("Failed to open: ./data/SonarAlt_Ex02_Ex03.mat");
-    let mat_file =
-        matfile::MatFile::parse(file).expect("Failed to parse: ./data/SonarAlt_Ex02_Ex03.mat");
+    let file =
+        std::fs::File::open("./data/SonarAlt.mat").expect("Failed to open: ./data/SonarAlt.mat");
+    let mat_file = matfile::MatFile::parse(file).expect("Failed to parse: ./data/SonarAlt.mat");
 
     if let Some(sonar_alt_arr) = mat_file.find_by_name("sonarAlt") {
         // Setup simulation & data logging; inputs based on textbook example
